@@ -78,6 +78,9 @@ android {
 }
 
 dependencies {
+    // debugImplementation because LeakCanary should only run in debug builds.
+    debugImplementation 'com.squareup.leakcanary:leakcanary-android:2.10'
+
     api fileTree(dir: "libs", include: ["*.jar"])
     // for WebDAV
     implementation('com.github.thegrizzlylabs:sardine-android:0.5') {
