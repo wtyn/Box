@@ -202,29 +202,10 @@ public class OkGoHelper {
                             return new java.security.cert.X509Certificate[]{};
                         }
                     };
-//            final Tls12SocketFactory sslSocketFactory = new Tls12SocketFactory(new SSLSocketFactoryCompat(trustAllCert));
-//            builder
-//                    .sslSocketFactory(sslSocketFactory, trustAllCert)
-//                    .hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
-
-
-            SSLContext sc = SSLContext.getInstance("TLSv1.2");
-            sc.init(null, null, null);
-            builder.sslSocketFactory(new Tls12SocketFactory(sc.getSocketFactory()));
-
-            ConnectionSpec cs = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
-                    .tlsVersions(TlsVersion.TLS_1_2)
-                    .build();
-
-            List<ConnectionSpec> specs = new ArrayList<>();
-            specs.add(cs);
-            specs.add(ConnectionSpec.COMPATIBLE_TLS);
-            specs.add(ConnectionSpec.CLEARTEXT);
-
-            builder.connectionSpecs(specs);
-
-
-            return builder;
+            final Tls12SocketFactory sslSocketFactory = new Tls12SocketFactory(new SSLSocketFactoryCompat(trustAllCert));
+            return builder
+                    .sslSocketFactory(sslSocketFactory, trustAllCert)
+                    .hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
