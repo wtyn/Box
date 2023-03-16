@@ -2,6 +2,7 @@ package com.github.tvbox.osc.util.js;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.util.Base64;
@@ -372,7 +373,11 @@ public class JSEngine {
                 InputStream is = App.getInstance().getAssets().open(name.substring(9));
                 byte[] data = new byte[is.available()];
                 is.read(data);
-                content = new String(data, StandardCharsets.UTF_8);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT) {
+                    content = new String(data, StandardCharsets.UTF_8);
+                } else {
+                    //TODO
+                }
             }
             if (content != null && !content.isEmpty()) {
                 moduleCache.put(name, content);

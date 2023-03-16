@@ -70,13 +70,13 @@
             android:layout_marginLeft="@dimen/vs_15"
             android:layout_marginEnd="@dimen/vs_15"
             android:layout_marginRight="@dimen/vs_15"
-            android:background="@drawable/button_dialog_vod"
             android:clickable="true"
             android:focusable="true"
             android:padding="@dimen/vs_5"
             android:src="@drawable/hm_search" />
 
         <ImageView
+            style="@style/NetfxTheme"
             android:id="@+id/tvStyle"
             android:layout_width="@dimen/vs_50"
             android:layout_height="@dimen/vs_50"
@@ -84,7 +84,6 @@
             android:layout_marginLeft="@dimen/vs_15"
             android:layout_marginEnd="@dimen/vs_15"
             android:layout_marginRight="@dimen/vs_15"
-            android:background="@drawable/button_dialog_vod"
             android:clickable="true"
             android:focusable="true"
             android:padding="@dimen/vs_10"
@@ -98,7 +97,6 @@
             android:layout_marginLeft="@dimen/vs_15"
             android:layout_marginEnd="@dimen/vs_15"
             android:layout_marginRight="@dimen/vs_15"
-            android:background="@drawable/button_dialog_vod"
             android:clickable="true"
             android:focusable="true"
             android:padding="@dimen/vs_5"
@@ -112,7 +110,6 @@
             android:layout_marginLeft="@dimen/vs_15"
             android:layout_marginEnd="@dimen/vs_15"
             android:layout_marginRight="@dimen/vs_15"
-            android:background="@drawable/button_dialog_vod"
             android:clickable="true"
             android:focusable="true"
             android:nextFocusDown="@id/tvDrive"

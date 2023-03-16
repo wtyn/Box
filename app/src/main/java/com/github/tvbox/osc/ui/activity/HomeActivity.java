@@ -164,6 +164,7 @@ public class HomeActivity extends BaseActivity {
         this.mGridView.setSpacingWithMargins(0, AutoSizeUtils.dp2px(this.mContext, 10.0f));
         this.mGridView.setAdapter(this.sortAdapter);
         this.mGridView.setOnItemListener(new TvRecyclerView.OnItemListener() {
+            @Override
             public void onItemPreSelected(TvRecyclerView tvRecyclerView, View view, int position) {
                 if (view != null && !HomeActivity.this.isDownOrUp) {
                     view.animate().scaleX(1.0f).scaleY(1.0f).setDuration(250).start();
@@ -175,6 +176,7 @@ public class HomeActivity extends BaseActivity {
                 }
             }
 
+            @Override
             public void onItemSelected(TvRecyclerView tvRecyclerView, View view, int position) {
                 if (view != null) {
                     HomeActivity.this.currentView = view;
@@ -212,6 +214,7 @@ public class HomeActivity extends BaseActivity {
             }
         });
         this.mGridView.setOnInBorderKeyEventListener(new TvRecyclerView.OnInBorderKeyEventListener() {
+            @Override
             public boolean onInBorderKeyEvent(int direction, View view) {
                 if (direction == View.FOCUS_UP) {
                     BaseLazyFragment baseLazyFragment = fragments.get(sortFocused);
@@ -329,6 +332,7 @@ public class HomeActivity extends BaseActivity {
                 } else {
                     sortAdapter.setNewData(DefaultConfig.adjustSort(ApiConfig.get().getHomeSourceBean().getKey(), new ArrayList<>(), true));
                 }
+                //TODO initViewPager
                 initViewPager(absXml);
             }
         });
@@ -750,6 +754,7 @@ public class HomeActivity extends BaseActivity {
     protected void onDestroy() {
         super.onDestroy();
         EventBus.getDefault().unregister(this);
+        mHandler.removeCallbacks(mRunnable);
         AppManager.getInstance().appExit(0);
         ControlManager.get().stopServer();
     }
