@@ -1,5 +1,8 @@
 package com.github.tvbox.osc.base;
 
+import android.content.Context;
+
+import androidx.multidex.MultiDex;
 import androidx.multidex.MultiDexApplication;
 
 import com.github.tvbox.osc.callback.EmptyCallback;
@@ -12,6 +15,7 @@ import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LocaleHelper;
 import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.PlayerHelper;
+import com.github.tvbox.osc.util.assetscopy.AssetsToSdcardAndReplaceUtil;
 import com.github.tvbox.osc.util.js.JSEngine;
 import com.kingja.loadsir.core.LoadSir;
 import com.orhanobut.hawk.Hawk;
@@ -20,6 +24,7 @@ import java.io.File;
 
 import me.jessyan.autosize.AutoSizeConfig;
 import me.jessyan.autosize.unit.Subunits;
+import tn.uu.baselibrary.utils.AssetsFilePathModel;
 
 /**
  * @author pj567
@@ -33,6 +38,11 @@ public class App extends MultiDexApplication {
     public void onCreate() {
         super.onCreate();
         instance = this;
+
+        //复制jar文件
+        AssetsFilePathModel pathModel = new AssetsFilePathModel("csp_jar", "");
+        AssetsToSdcardAndReplaceUtil.copyIfNotExist(this, pathModel);
+
         initParams();
         // takagen99 : Initialize Locale
         initLocale();
@@ -63,6 +73,13 @@ public class App extends MultiDexApplication {
         // Add JS support
         JSEngine.getInstance().create();
     }
+
+    @Override
+    protected void attachBaseContext(Context base) {
+        super.attachBaseContext(base);
+        MultiDex.install(this);
+    }
+
 
     private void initParams() {
         // Hawk

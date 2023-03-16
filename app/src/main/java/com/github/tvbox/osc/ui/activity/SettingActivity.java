@@ -178,7 +178,7 @@ public class SettingActivity extends BaseActivity {
     }
 
     @Override
-    public void onBackPressed() {
+    public void onBackPressed() { //设置返回键，调用方法
         if ((homeSourceKey != null && !homeSourceKey.equals(Hawk.get(HawkConfig.HOME_API, ""))) ||
                 !currentApi.equals(Hawk.get(HawkConfig.API_URL, "")) || !currentLive.equals(Hawk.get(HawkConfig.LIVE_URL, "")) ||
                 homeRec != Hawk.get(HawkConfig.HOME_REC, 0) ||

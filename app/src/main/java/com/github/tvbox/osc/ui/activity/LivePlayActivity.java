@@ -85,6 +85,7 @@ import xyz.doikki.videoplayer.player.VideoView;
 import xyz.doikki.videoplayer.util.PlayerUtils;
 
 /**
+ * 直播界面
  * @author pj567
  * @date :2021/1/12
  * @description:

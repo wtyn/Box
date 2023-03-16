@@ -2,8 +2,10 @@ package com.github.tvbox.osc.api;
 
 import android.app.Activity;
 import android.net.Uri;
+import android.os.Build;
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 
 import com.github.catvod.crawler.JarLoader;
 import com.github.catvod.crawler.JsLoader;
@@ -226,6 +228,20 @@ public class ApiConfig {
     }
 
     public void loadJar(boolean useCache, String spider, LoadConfigCallback callback) {
+        Log.e("xxx", "spider: " + spider);
+        // 判断是否正常, 如果不是jar的url
+        //直接加载默认的jar
+        if (!spider.contains(";md5;") || !spider.contains(".jar") || Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+            File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/defaultCsp.jar");
+            if (cache.exists()) {
+                if (jarLoader.load(cache.getAbsolutePath())) {
+                    callback.success();
+                } else {
+                    callback.error("");
+                }
+            }
+            return;
+        }
         String[] urls = spider.split(";md5;");
         String jarUrl = urls[0];
         String md5 = urls.length > 1 ? urls[1].trim() : "";
@@ -244,6 +260,8 @@ public class ApiConfig {
 
         boolean isJarInImg = jarUrl.startsWith("img+");
         jarUrl = jarUrl.replace("img+", "");
+        //打印url，防止url错误导致无法正常解析
+        Log.e("xxx", "jarUrl: " + jarUrl);
         OkGo.<File>get(jarUrl)
                 .headers("User-Agent", userAgent)
                 .headers("Accept", requestAccept)
@@ -302,6 +320,12 @@ public class ApiConfig {
         parseJson(apiUrl, sb.toString());
     }
 
+    /**
+     * 解析jar网址等
+     *
+     * @param apiUrl
+     * @param jsonStr 数据源解析数据
+     */
     private void parseJson(String apiUrl, String jsonStr) {
 
         JsonObject infoJson = new Gson().fromJson(jsonStr, JsonObject.class);
@@ -376,7 +400,7 @@ public class ApiConfig {
         // takagen99: Check if Live URL is setup in Settings, if no, get from File Config
         liveChannelGroupList.clear();           //修复从后台切换重复加载频道列表
         String liveURL = Hawk.get(HawkConfig.LIVE_URL, "");
-        String epgURL  = Hawk.get(HawkConfig.EPG_URL, "");
+        String epgURL = Hawk.get(HawkConfig.EPG_URL, "");
 
         String liveURL_final = null;
         try {

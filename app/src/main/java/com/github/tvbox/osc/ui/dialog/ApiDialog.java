@@ -11,6 +11,7 @@ import android.widget.Toast;
 import androidx.annotation.NonNull;
 
 import com.github.tvbox.osc.R;
+import com.github.tvbox.osc.base.DefaultMyUrl;
 import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.server.ControlManager;
 import com.github.tvbox.osc.ui.activity.HomeActivity;
@@ -32,7 +33,7 @@ import java.util.List;
 import me.jessyan.autosize.utils.AutoSizeUtils;
 
 /**
- * 描述
+ * 设置播放源、直播地址的界面
  *
  * @author pj567
  * @since 2020/12/27
@@ -64,11 +65,24 @@ public class ApiDialog extends BaseDialog {
         ivQRCode = findViewById(R.id.ivQRCode);
         tvAddress = findViewById(R.id.tvAddress);
         inputApi = findViewById(R.id.input);
-        inputApi.setText(Hawk.get(HawkConfig.API_URL, "https://dxawi.github.io/0/0.json"));
+        //初始化数据源地址和直播地址
+        //数据源地址
+        String apiUrl = Hawk.get(HawkConfig.API_URL, "");
+        if (apiUrl.isEmpty()) {
+            apiUrl = DefaultMyUrl.URL_API;
+            Hawk.put(HawkConfig.API_URL, apiUrl);
+        }
+        inputApi.setText(apiUrl);
 
         // takagen99: Add Live & EPG Address
         inputLive = findViewById(R.id.input_live);
-        inputLive.setText(Hawk.get(HawkConfig.LIVE_URL, ""));
+        //直播地址
+        String liveUrl = Hawk.get(HawkConfig.LIVE_URL, "");
+        if (liveUrl.isEmpty()) {
+            liveUrl = DefaultMyUrl.URL_LIVE;
+            Hawk.put(HawkConfig.LIVE_URL, liveUrl);
+        }
+        inputLive.setText(liveUrl);
         inputEPG = findViewById(R.id.input_epg);
         inputEPG.setText(Hawk.get(HawkConfig.EPG_URL, ""));
 

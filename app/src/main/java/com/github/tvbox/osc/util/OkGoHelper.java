@@ -16,16 +16,20 @@ import java.net.InetAddress;
 import java.net.Socket;
 import java.security.cert.CertificateException;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.logging.Level;
 
+import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.X509TrustManager;
 
 import okhttp3.Cache;
+import okhttp3.ConnectionSpec;
 import okhttp3.HttpUrl;
 import okhttp3.OkHttpClient;
+import okhttp3.TlsVersion;
 import okhttp3.dnsoverhttps.DnsOverHttps;
 import okhttp3.internal.Version;
 import xyz.doikki.videoplayer.exo.ExoMediaSourceHelper;
@@ -165,8 +169,9 @@ public class OkGoHelper {
 
         defaultClient = okHttpClient;
 
-        builder.followRedirects(false);
-        builder.followSslRedirects(false);
+        builder.followRedirects(true);
+        builder.followSslRedirects(true);
+        builder.retryOnConnectionFailure(true);
         noRedirectClient = builder.build();
 
         initExoOkHttpClient();
@@ -197,10 +202,29 @@ public class OkGoHelper {
                             return new java.security.cert.X509Certificate[]{};
                         }
                     };
-            final Tls12SocketFactory sslSocketFactory = new Tls12SocketFactory(new SSLSocketFactoryCompat(trustAllCert));
-            return builder
-                    .sslSocketFactory(sslSocketFactory, trustAllCert)
-                    .hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
+//            final Tls12SocketFactory sslSocketFactory = new Tls12SocketFactory(new SSLSocketFactoryCompat(trustAllCert));
+//            builder
+//                    .sslSocketFactory(sslSocketFactory, trustAllCert)
+//                    .hostnameVerifier(HttpsUtils.UnSafeHostnameVerifier);
+
+
+            SSLContext sc = SSLContext.getInstance("TLSv1.2");
+            sc.init(null, null, null);
+            builder.sslSocketFactory(new Tls12SocketFactory(sc.getSocketFactory()));
+
+            ConnectionSpec cs = new ConnectionSpec.Builder(ConnectionSpec.MODERN_TLS)
+                    .tlsVersions(TlsVersion.TLS_1_2)
+                    .build();
+
+            List<ConnectionSpec> specs = new ArrayList<>();
+            specs.add(cs);
+            specs.add(ConnectionSpec.COMPATIBLE_TLS);
+            specs.add(ConnectionSpec.CLEARTEXT);
+
+            builder.connectionSpecs(specs);
+
+
+            return builder;
         } catch (Exception e) {
             throw new RuntimeException(e);
         }
@@ -208,7 +232,7 @@ public class OkGoHelper {
 
     private static class Tls12SocketFactory extends SSLSocketFactory {
 
-        private static final String[] TLS_SUPPORT_VERSION = {"TLSv1.1", "TLSv1.2"};
+        private static final String[] TLS_SUPPORT_VERSION = {"TLSv1.2"};
 
         final SSLSocketFactory delegate;
 
