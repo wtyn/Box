@@ -13,7 +13,7 @@ android {
         minSdkVersion 16
         targetSdkVersion 26
         versionCode 1
-        versionName "1.0.".concat(buildTime())
+        versionName "1.1.0"
         multiDexEnabled true
         //设置room的Schema的位置
         javaCompileOptions {
@@ -27,6 +27,15 @@ android {
         exclude 'META-INF/DEPENDENCIES'
     }
 
+    android.applicationVariants.all { variant ->
+        if (variant.buildType.name == 'release') {
+            variant.outputs.all {
+                outputFileName = "TVBox_${versionName}_" + buildTime() + ".apk"
+            }
+        }
+    }
+
+
     buildTypes {
         debug {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
@@ -39,7 +48,7 @@ android {
         release {
             proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
             minifyEnabled true
-
+            shrinkResources true
             ndk {
                 abiFilters 'armeabi-v7a'
             }
