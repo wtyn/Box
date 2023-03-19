@@ -2,6 +2,8 @@ package com.github.tvbox.osc.util;
 
 import android.content.res.AssetManager;
 
+import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.api.ConstantUrl;
 import com.github.tvbox.osc.base.App;
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;

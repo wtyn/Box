@@ -43,6 +43,9 @@ public class App extends MultiDexApplication {
         AssetsFilePathModel pathModel = new AssetsFilePathModel("csp_jar", "");
         AssetsToSdcardAndReplaceUtil.copyIfNotExist(this, pathModel);
 
+        AssetsFilePathModel tvLivePathModel = new AssetsFilePathModel("tvlive", "");
+        AssetsToSdcardAndReplaceUtil.copyIfNotExist(this, tvLivePathModel);
+
         initParams();
         // takagen99 : Initialize Locale
         initLocale();

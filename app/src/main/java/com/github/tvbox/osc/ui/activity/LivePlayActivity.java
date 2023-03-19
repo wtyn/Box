@@ -6,6 +6,7 @@ import android.animation.Animator;
 import android.animation.AnimatorListenerAdapter;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.Handler;
 import android.util.Base64;
@@ -69,6 +70,11 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.InputStreamReader;
 import java.net.URLEncoder;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -86,6 +92,7 @@ import xyz.doikki.videoplayer.util.PlayerUtils;
 
 /**
  * 直播界面
+ *
  * @author pj567
  * @date :2021/1/12
  * @description:
@@ -445,6 +452,7 @@ public class LivePlayActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        EventBus.getDefault().unregister(this);
         if (mVideoView != null) {
             mVideoView.release();
             mVideoView = null;
@@ -933,6 +941,7 @@ public class LivePlayActivity extends BaseActivity {
                 }
                 return true;
             }
+
             @Override
             public void longPress() {
                 showSettingGroup();
@@ -1572,21 +1581,66 @@ public class LivePlayActivity extends BaseActivity {
     }
 
     private void initLiveChannelList() {
-        List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
-        if (list.isEmpty()) {
-            Toast.makeText(App.getInstance(), "频道列表为空", Toast.LENGTH_SHORT).show();
-            finish();
-            return;
-        }
+        //适配安卓4.4，网络请
+        //
+        // 求异常。直接读取文件
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH) {
+            File liveFile = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/tvlive.txt");
+            if (liveFile.exists()) {
+                String liveTxt = "";
+                try {
+                    InputStreamReader inputStreamReader = new InputStreamReader(new FileInputStream(liveFile));
+                    BufferedReader br = new BufferedReader(inputStreamReader);
+                    String mimeTypeLine = null;
+                    while ((mimeTypeLine = br.readLine()) != null) {
+                        liveTxt = liveTxt + mimeTypeLine + "\n";
+                    }
 
-        if (list.size() == 1 && list.get(0).getGroupName().startsWith("http://127.0.0.1")) {
-            showLoading();
-            loadProxyLives(list.get(0).getGroupName());
+                    JsonArray livesArray;
+                    LinkedHashMap<String, LinkedHashMap<String, ArrayList<String>>> linkedHashMap = new LinkedHashMap<>();
+                    TxtSubscribe.parse(linkedHashMap, liveTxt);
+                    livesArray = TxtSubscribe.live2JsonArray(linkedHashMap);
+
+                    ApiConfig.get().loadLives(livesArray);
+                    List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
+                    if (list.isEmpty()) {
+                        Toast.makeText(App.getInstance(), "频道列表为空", Toast.LENGTH_SHORT).show();
+                        finish();
+                        return;
+                    }
+                    liveChannelGroupList.clear();
+                    liveChannelGroupList.addAll(list);
+
+                    mHandler.post(new Runnable() {
+                        @Override
+                        public void run() {
+                            LivePlayActivity.this.showSuccess();
+                            initLiveState();
+                        }
+                    });
+                } catch (Exception e) {
+                    e.printStackTrace();
+                }
+            }
+
         } else {
-            liveChannelGroupList.clear();
-            liveChannelGroupList.addAll(list);
-            showSuccess();
-            initLiveState();
+            //获取直播电视列表
+            List<LiveChannelGroup> list = ApiConfig.get().getChannelGroupList();
+            if (list.isEmpty()) {
+                Toast.makeText(App.getInstance(), "频道列表为空", Toast.LENGTH_SHORT).show();
+                finish();
+                return;
+            }
+
+            if (list.size() == 1 && list.get(0).getGroupName().startsWith("http://127.0.0.1")) {
+                showLoading();
+                loadProxyLives(list.get(0).getGroupName());
+            } else {
+                liveChannelGroupList.clear();
+                liveChannelGroupList.addAll(list);
+                showSuccess();
+                initLiveState();
+            }
         }
     }
 

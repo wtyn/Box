@@ -7,6 +7,8 @@ import android.text.TextUtils;
 import android.util.Base64;
 import android.util.Log;
 
+import androidx.annotation.Nullable;
+
 import com.github.catvod.crawler.JarLoader;
 import com.github.catvod.crawler.JsLoader;
 import com.github.catvod.crawler.Spider;
@@ -42,6 +44,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.InputStreamReader;
+import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.LinkedHashMap;
@@ -80,6 +83,14 @@ public class ApiConfig {
         sourceBeanList = new LinkedHashMap<>();
         liveChannelGroupList = new ArrayList<>();
         parseBeanList = new ArrayList<>();
+
+        //初始化几个地址
+        if (Hawk.get(HawkConfig.API_URL, "").isEmpty()) {
+            Hawk.put(HawkConfig.API_URL, ConstantUrl.URL_API);
+        }
+        if (Hawk.get(HawkConfig.EPG_URL, "").isEmpty()) {
+            Hawk.put(HawkConfig.EPG_URL, ConstantUrl.URL_API_ONLY_FOR_LIVE);
+        }
     }
 
     public static ApiConfig get() {
@@ -132,16 +143,37 @@ public class ApiConfig {
 
     public void loadConfig(boolean useCache, LoadConfigCallback callback, Activity activity) {
         // Embedded Source : Update in Strings.xml if required
-        String apiUrl = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
-        if (apiUrl.isEmpty()) {
-            callback.error("-1");
-            return;
-        }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                String apiUrl = Hawk.get(HawkConfig.API_URL, HomeActivity.getRes().getString(R.string.app_source));
+                if (apiUrl.isEmpty()) {
+                    if (callback != null) {
+                        callback.error("-1");
+                    }
+                    return;
+                }
+                loadWithApiUrl(apiUrl, useCache, callback);
+            }
+        }).start();
+
+    }
+
+    /**
+     * 开始加载网络数据
+     *
+     * @param apiUrl
+     * @param useCache
+     * @param callback
+     */
+    public void loadWithApiUrl(String apiUrl, boolean useCache, @Nullable LoadConfigCallback callback) {
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(apiUrl));
         if (useCache && cache.exists()) {
             try {
                 parseJson(apiUrl, cache);
-                callback.success();
+                if (callback != null) {
+                    callback.success();
+                }
                 return;
             } catch (Throwable th) {
                 th.printStackTrace();
@@ -165,7 +197,7 @@ public class ApiConfig {
         } else {
             configUrl = apiUrl;
         }
-        System.out.println("API URL :" + configUrl);
+        Log.e("xxxx", "API URL :" + configUrl);
         String configKey = TempKey;
         OkGo.<String>get(configUrl)
                 .headers("User-Agent", userAgent)
@@ -189,10 +221,14 @@ public class ApiConfig {
                             } catch (Throwable th) {
                                 th.printStackTrace();
                             }
-                            callback.success();
+                            if (callback != null) {
+                                callback.success();
+                            }
                         } catch (Throwable th) {
                             th.printStackTrace();
-                            callback.error("解析配置失败");
+                            if (callback != null) {
+                                callback.error("解析配置失败");
+                            }
                         }
                     }
 
@@ -202,15 +238,20 @@ public class ApiConfig {
                         if (cache.exists()) {
                             try {
                                 parseJson(apiUrl, cache);
-                                callback.success();
+                                if (callback != null) {
+                                    callback.success();
+                                }
                                 return;
                             } catch (Throwable th) {
                                 th.printStackTrace();
                             }
                         }
-                        callback.error("拉取配置失败\n" + (response.getException() != null ? response.getException().getMessage() : ""));
+                        if (callback != null) {
+                            callback.error("拉取配置失败\n" + (response.getException() != null ? response.getException().getMessage() : ""));
+                        }
                     }
 
+                    @Override
                     public String convertResponse(okhttp3.Response response) throws Throwable {
                         String result = "";
                         if (response.body() == null) {
@@ -229,83 +270,89 @@ public class ApiConfig {
 
     public void loadJar(boolean useCache, String spider, LoadConfigCallback callback) {
         Log.e("xxx", "spider: " + spider);
-        // 判断是否正常, 如果不是jar的url
-        //直接加载默认的jar
-        if (!spider.contains(";md5;") || !spider.contains(".jar") || Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-            File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/defaultCsp.jar");
-            if (cache.exists()) {
-                if (jarLoader.load(cache.getAbsolutePath())) {
-                    callback.success();
-                } else {
-                    callback.error("");
-                }
-            }
-            return;
-        }
-        String[] urls = spider.split(";md5;");
-        String jarUrl = urls[0];
-        String md5 = urls.length > 1 ? urls[1].trim() : "";
-        File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/csp.jar");
-
-        if (!md5.isEmpty() || useCache) {
-            if (cache.exists() && (useCache || MD5.getFileMd5(cache).equalsIgnoreCase(md5))) {
-                if (jarLoader.load(cache.getAbsolutePath())) {
-                    callback.success();
-                } else {
-                    callback.error("");
-                }
-                return;
-            }
-        }
-
-        boolean isJarInImg = jarUrl.startsWith("img+");
-        jarUrl = jarUrl.replace("img+", "");
-        //打印url，防止url错误导致无法正常解析
-        Log.e("xxx", "jarUrl: " + jarUrl);
-        OkGo.<File>get(jarUrl)
-                .headers("User-Agent", userAgent)
-                .headers("Accept", requestAccept)
-                .execute(new AbsCallback<File>() {
-
-                    @Override
-                    public File convertResponse(okhttp3.Response response) throws Throwable {
-                        File cacheDir = cache.getParentFile();
-                        if (!cacheDir.exists())
-                            cacheDir.mkdirs();
-                        if (cache.exists())
-                            cache.delete();
-                        FileOutputStream fos = new FileOutputStream(cache);
-                        if (isJarInImg) {
-                            String respData = response.body().string();
-                            byte[] imgJar = getImgJar(respData);
-                            fos.write(imgJar);
-                        } else {
-                            fos.write(response.body().bytes());
-                        }
-                        fos.flush();
-                        fos.close();
-                        return cache;
-                    }
-
-                    @Override
-                    public void onSuccess(Response<File> response) {
-                        if (response.body().exists()) {
-                            if (jarLoader.load(response.body().getAbsolutePath())) {
-                                callback.success();
-                            } else {
-                                callback.error("");
-                            }
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                // 判断是否正常, 如果不是jar的url
+                //直接加载默认的jar
+                if (!spider.contains(";md5;") || !spider.contains(".jar") || Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
+                    File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/defaultCsp.jar");
+                    if (cache.exists()) {
+                        if (jarLoader.load(cache.getAbsolutePath())) {
+                            callback.success();
                         } else {
                             callback.error("");
                         }
                     }
+                    return;
+                }
+                String[] urls = spider.split(";md5;");
+                String jarUrl = urls[0];
+                String md5 = urls.length > 1 ? urls[1].trim() : "";
+                File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/csp.jar");
 
-                    @Override
-                    public void onError(Response<File> response) {
-                        super.onError(response);
-                        callback.error("");
+                if (!md5.isEmpty() || useCache) {
+                    if (cache.exists() && (useCache || MD5.getFileMd5(cache).equalsIgnoreCase(md5))) {
+                        if (jarLoader.load(cache.getAbsolutePath())) {
+                            callback.success();
+                        } else {
+                            callback.error("");
+                        }
+                        return;
                     }
-                });
+                }
+
+                boolean isJarInImg = jarUrl.startsWith("img+");
+                jarUrl = jarUrl.replace("img+", "");
+                //打印url，防止url错误导致无法正常解析
+                Log.e("xxx", "jarUrl: " + jarUrl);
+                OkGo.<File>get(jarUrl)
+                        .headers("User-Agent", userAgent)
+                        .headers("Accept", requestAccept)
+                        .execute(new AbsCallback<File>() {
+
+                            @Override
+                            public File convertResponse(okhttp3.Response response) throws Throwable {
+                                File cacheDir = cache.getParentFile();
+                                if (!cacheDir.exists())
+                                    cacheDir.mkdirs();
+                                if (cache.exists())
+                                    cache.delete();
+                                FileOutputStream fos = new FileOutputStream(cache);
+                                if (isJarInImg) {
+                                    String respData = response.body().string();
+                                    byte[] imgJar = getImgJar(respData);
+                                    fos.write(imgJar);
+                                } else {
+                                    fos.write(response.body().bytes());
+                                }
+                                fos.flush();
+                                fos.close();
+                                return cache;
+                            }
+
+                            @Override
+                            public void onSuccess(Response<File> response) {
+                                if (response.body().exists()) {
+                                    if (jarLoader.load(response.body().getAbsolutePath())) {
+                                        callback.success();
+                                    } else {
+                                        callback.error("");
+                                    }
+                                } else {
+                                    callback.error("");
+                                }
+                            }
+
+                            @Override
+                            public void onError(Response<File> response) {
+                                super.onError(response);
+                                callback.error("");
+                            }
+                        });
+            }
+        }).start();
+
     }
 
     private void parseJson(String apiUrl, File f) throws Throwable {
@@ -426,7 +473,7 @@ public class ApiConfig {
                     }
 
                     // takagen99: Capture Live URL into Config
-                    System.out.println("Live URL :" + extUrlFix);
+                    Log.e("xxxx", "Live URL :" + extUrlFix);
                     putLiveHistory(extUrlFix);
                     // Overwrite with Live URL from Settings
                     if (StringUtils.isBlank(liveURL)) {
@@ -446,7 +493,7 @@ public class ApiConfig {
                 // takagen99 : Getting EPG URL from File Config & put into Settings
                 if (livesOBJ.has("epg")) {
                     String epg = livesOBJ.get("epg").getAsString();
-                    System.out.println("EPG URL :" + epg);
+                    Log.e("xxx", "EPG URL :" + epg);
                     putEPGHistory(epg);
                     // Overwrite with EPG URL from Settings
                     if (StringUtils.isBlank(epgURL)) {
@@ -475,7 +522,7 @@ public class ApiConfig {
                         // takagen99 : Getting EPG URL from File Config & put into Settings
                         if (fengMiLives.has("epg")) {
                             String epg = fengMiLives.get("epg").getAsString();
-                            System.out.println("EPG URL :" + epg);
+                            Log.e("xxx", "EPG URL :" + epg);
                             putEPGHistory(epg);
                             // Overwrite with EPG URL from Settings
                             if (StringUtils.isBlank(epgURL)) {
@@ -487,7 +534,7 @@ public class ApiConfig {
 
                         if (url.startsWith("http")) {
                             // takagen99: Capture Live URL into Settings
-                            System.out.println("Live URL :" + url);
+                            Log.e("xxx", "Live URL :" + url);
                             putLiveHistory(url);
                             // Overwrite with Live URL from Settings
                             if (StringUtils.isBlank(liveURL)) {
@@ -748,6 +795,21 @@ public class ApiConfig {
     }
 
     public List<LiveChannelGroup> getChannelGroupList() {
+        //用来配置EPG资源，如果直播没有内容，修改默认
+        if (liveChannelGroupList.size() == 0) {
+            //防止为空，防止http无法解析
+            String url = "https://ghproxy.com/https://raw.githubusercontent.com/dxawi/1/main/tvlive.txt";
+            String liveURL_final = null;
+            try {
+                liveURL_final = Base64.encodeToString(url.getBytes("UTF-8"), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP);
+                liveURL_final = "http://127.0.0.1:9978/proxy?do=live&type=txt&ext=" + liveURL_final;
+                LiveChannelGroup liveChannelGroup = new LiveChannelGroup();
+                liveChannelGroup.setGroupName(liveURL_final);
+                liveChannelGroupList.add(liveChannelGroup);
+            } catch (UnsupportedEncodingException e) {
+                e.printStackTrace();
+            }
+        }
         return liveChannelGroupList;
     }
 

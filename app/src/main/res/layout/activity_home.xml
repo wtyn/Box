@@ -73,7 +73,8 @@
             android:clickable="true"
             android:focusable="true"
             android:padding="@dimen/vs_5"
-            android:src="@drawable/hm_search" />
+            android:src="@drawable/hm_search"
+            android:background="@drawable/button_dialog_vod"/>
 
         <ImageView
             style="@style/NetfxTheme"
@@ -87,7 +88,8 @@
             android:clickable="true"
             android:focusable="true"
             android:padding="@dimen/vs_10"
-            android:src="@drawable/hm_left_right" />
+            android:src="@drawable/hm_left_right"
+            android:background="@drawable/button_dialog_vod"/>
 
         <ImageView
             android:id="@+id/tvDrawer"
@@ -100,7 +102,8 @@
             android:clickable="true"
             android:focusable="true"
             android:padding="@dimen/vs_5"
-            android:src="@drawable/hm_drawer" />
+            android:src="@drawable/hm_drawer"
+            android:background="@drawable/button_dialog_vod"/>
 
         <ImageView
             android:id="@+id/tvMenu"
@@ -114,7 +117,8 @@
             android:focusable="true"
             android:nextFocusDown="@id/tvDrive"
             android:padding="@dimen/vs_5"
-            android:src="@drawable/hm_settings" />
+            android:src="@drawable/hm_settings"
+            android:background="@drawable/button_dialog_vod"/>
 
         <TextView
             android:id="@+id/tvDate"
@@ -129,7 +133,8 @@
             android:textColor="@android:color/white"
             android:textSize="@dimen/ts_22"
             android:textStyle="bold"
-            tools:text="DateTime" />
+            tools:text="DateTime"
+            android:background="@drawable/button_dialog_vod"/>
 
     </LinearLayout>
 

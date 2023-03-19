@@ -1,11 +1,15 @@
-package com.github.tvbox.osc.base;
+package com.github.tvbox.osc.api;
 
 /**
  * 默认的url
  */
-public class DefaultMyUrl {
+public class ConstantUrl {
+    //获取视频数据的
     public  static final String URL_API = "https://agit.ai/hu/hcr/raw/branch/master/MMM.txt";
-//    public  static final String URL_API = "https://dxawi.github.io/0/0.json";
+
+    //只是用来获取直播数据的
+    public  static final String URL_API_ONLY_FOR_LIVE = "https://dxawi.github.io/0/0.json";
+
     public  static final String URL_LIVE = "https://raw.githubusercontent.com/dxawi/1/main/jar/cc.jar";
 
 }
