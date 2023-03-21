@@ -4,6 +4,7 @@ import android.app.Activity;
 import android.content.Context;
 import android.media.AudioManager;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.util.AttributeSet;
 import android.view.GestureDetector;
@@ -20,6 +21,7 @@ import android.widget.TextView;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.Map;
 
 import xyz.doikki.videoplayer.controller.BaseVideoController;
@@ -54,49 +56,61 @@ public abstract class BaseController extends BaseVideoController implements Gest
 
     private boolean mIsDoubleTapTogglePlayEnabled = true;
 
-
     public BaseController(@NonNull Context context) {
         super(context);
-        mHandler = new Handler(new Handler.Callback() {
-            @Override
-            public boolean handleMessage(@NonNull Message msg) {
-                int what = msg.what;
-                switch (what) {
-                    case 100: { // 亮度+音量调整
-                        mSlideInfo.setVisibility(VISIBLE);
-                        mSlideInfo.setText(msg.obj.toString());
-                        break;
-                    }
-                    case 101: { // 亮度+音量调整 关闭
-                        mSlideInfo.setVisibility(GONE);
-                        break;
-                    }
-                    case 201: { // Show Volume Dialog
-                        mDialogVolume.setVisibility(VISIBLE);
-                        break;
-                    }
-                    case 202: { // Hide Volume Dialog
-                        mDialogVolume.setVisibility(GONE);
-                        break;
-                    }
-                    case 203: { // Show Volume Dialog
-                        mDialogBrightness.setVisibility(VISIBLE);
-                        break;
-                    }
-                    case 204: { // Hide Volume Dialog
-                        mDialogBrightness.setVisibility(GONE);
-                        break;
-                    }
-                    default: {
-                        if (mHandlerCallback != null)
-                            mHandlerCallback.callback(msg);
-                        break;
-                    }
-                }
-                return false;
-            }
-        });
+        WeakReference<BaseController> weakReference = new WeakReference<>(this);
+        mHandler = new CallHandler(weakReference);
         mHandler.post(mRunnable);
+    }
+
+
+    private static class CallHandler extends Handler {
+        private final WeakReference<BaseController> reference;
+
+        CallHandler(WeakReference<BaseController> weakReference) {
+            super(Looper.getMainLooper());
+            this.reference = weakReference;
+        }
+
+        @Override
+        public void handleMessage(@NonNull Message msg) {
+            super.handleMessage(msg);
+            BaseController controller = reference.get();
+            if (controller == null) return;
+            int what = msg.what;
+            switch (what) {
+                case 100: { // 亮度+音量调整
+                    controller.mSlideInfo.setVisibility(VISIBLE);
+                    controller.mSlideInfo.setText(msg.obj.toString());
+                    break;
+                }
+                case 101: { // 亮度+音量调整 关闭
+                    controller.mSlideInfo.setVisibility(GONE);
+                    break;
+                }
+                case 201: { // Show Volume Dialog
+                    controller.mDialogVolume.setVisibility(VISIBLE);
+                    break;
+                }
+                case 202: { // Hide Volume Dialog
+                    controller.mDialogVolume.setVisibility(GONE);
+                    break;
+                }
+                case 203: { // Show Volume Dialog
+                    controller.mDialogBrightness.setVisibility(VISIBLE);
+                    break;
+                }
+                case 204: { // Hide Volume Dialog
+                    controller.mDialogBrightness.setVisibility(GONE);
+                    break;
+                }
+                default: {
+                    if (controller.mHandlerCallback != null)
+                        controller.mHandlerCallback.callback(msg);
+                    break;
+                }
+            }
+        }
     }
 
     public BaseController(@NonNull Context context, @Nullable AttributeSet attrs) {
@@ -422,6 +436,8 @@ public abstract class BaseController extends BaseVideoController implements Gest
         msg.obj = "亮度 " + percent + "%";
         mHandler.sendMessage(msg);
         mHandler.removeMessages(204);
+
+        //会导致内存泄漏
         mHandler.sendEmptyMessageDelayed(204, 600);
     }
 
