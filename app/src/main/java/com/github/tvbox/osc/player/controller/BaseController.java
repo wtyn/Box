@@ -134,6 +134,12 @@ public abstract class BaseController extends BaseVideoController implements Gest
     };
 
     @Override
+    protected void onDetachedFromWindow() {
+        super.onDetachedFromWindow();
+        mHandler.removeCallbacks(mRunnable);
+    }
+
+    @Override
     protected void initView() {
         super.initView();
         mAudioManager = (AudioManager) getContext().getSystemService(Context.AUDIO_SERVICE);

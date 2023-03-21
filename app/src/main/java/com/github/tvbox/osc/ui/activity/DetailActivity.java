@@ -95,7 +95,7 @@ public class DetailActivity extends BaseActivity {
     private FragmentContainerView llPlayerFragmentContainer;
     private View llPlayerFragmentContainerBlock;
     private View llPlayerPlace;
-    private static PlayFragment playFragment = null;
+    private PlayFragment playFragment = null;
     private ImageView ivThumb;
     private TextView tvName;
     private TextView tvYear;
@@ -931,7 +931,7 @@ public class DetailActivity extends BaseActivity {
         if (fullWindows) {
             if (playFragment.onBackPressed())
                 return;
-            VodController.mProgressTop.setVisibility(View.INVISIBLE);
+            playFragment.setProgressTopInvisible();
             toggleFullPreview();
             mGridView.requestFocus();
             return;

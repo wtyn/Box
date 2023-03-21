@@ -233,7 +233,7 @@ public class VodController extends BaseController {
     LinearLayout mSpeedll;
 
     // pause container
-    public static FrameLayout mProgressTop;
+    private FrameLayout mProgressTop;
     ImageView mPauseIcon;
     LinearLayout mTapSeek;
 
@@ -313,6 +313,10 @@ public class VodController extends BaseController {
     protected void onDetachedFromWindow() {
         super.onDetachedFromWindow();
         mHandler.removeCallbacks(mTimeRunnable);
+    }
+
+    public void setProgressTopInvisible() {
+        mProgressTop.setVisibility(View.INVISIBLE);
     }
 
     @Override

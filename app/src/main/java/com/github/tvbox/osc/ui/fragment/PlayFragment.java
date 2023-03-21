@@ -369,6 +369,12 @@ public class PlayFragment extends BaseLazyFragment {
         }
     }
 
+    public void setProgressTopInvisible() {
+        if (mController != null) {
+            mController.setProgressTopInvisible();
+        }
+    }
+
     void selectMyInternalSubtitle() {
         AbstractPlayer mediaPlayer = mVideoView.getMediaPlayer();
         TrackInfo trackInfo = null;
