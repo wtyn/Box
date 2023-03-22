@@ -25,6 +25,7 @@ import com.github.tvbox.osc.ui.dialog.GridFilterDialog;
 import com.github.tvbox.osc.ui.tv.widget.LoadMoreView;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
+import com.google.android.exoplayer2.util.Log;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
 import com.owen.tvrecyclerview.widget.V7GridLayoutManager;
 import com.owen.tvrecyclerview.widget.V7LinearLayoutManager;
@@ -82,6 +83,16 @@ public class GridFragment extends BaseLazyFragment {
         initViewModel();
         initData();
     }
+
+    @Override
+    public void onDestroy() {
+        super.onDestroy();
+        while (!mGrids.empty()) {
+            mGrids.pop();
+            Log.e("xxx", "=================xxx");
+        }
+    }
+
 
     private void changeView(String id) {
         initView();

@@ -753,12 +753,15 @@ public class LivePlayActivity extends BaseActivity {
             epgUrl = epgStringAddress + "?ch=" + URLEncoder.encode(epgTagName) + "&date=" + timeFormat.format(date);
         }
         UrlHttpUtil.get(epgUrl, new CallBackUtil.CallBackString() {
+            @Override
             public void onFailure(int i, String str) {
                 showEpg(date, new ArrayList());
 //                showBottomEpg();
             }
 
+            @Override
             public void onResponse(String paramString) {
+                if (paramString == null) return;
 
                 ArrayList arrayList = new ArrayList();
 
@@ -793,7 +796,9 @@ public class LivePlayActivity extends BaseActivity {
             showChannelInfo();
             return true;
         }
-        mVideoView.release();
+        if (mVideoView != null) {
+            mVideoView.release();
+        }
         if (!changeSource) {
             currentChannelGroupIndex = channelGroupIndex;
             currentLiveChannelIndex = liveChannelIndex;
