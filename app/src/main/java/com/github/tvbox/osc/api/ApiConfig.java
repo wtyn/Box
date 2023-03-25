@@ -313,7 +313,7 @@ public class ApiConfig {
                 //直接加载默认的jar
                 if (!spider.contains(";md5;") || !spider.contains(".jar") || Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
                     WLogUtil.d("xxx", "加载默认的csp.jar");
-                    File cache = new File(ConstantForResource.rootPath + "/defaultCsp.jar");
+                    File cache = new File(ConstantForResource.rootPath + "/default_csp.jar");
                     if (cache.exists()) {
                         if (jarLoader.load(cache.getAbsolutePath())) {
                             callback.success();
@@ -371,7 +371,7 @@ public class ApiConfig {
 
                             @Override
                             public void onSuccess(Response<File> response) {
-                                WLogUtil.d("xxx", "111111111: " + 2222);
+                                WLogUtil.d("xxx", "111111111: ");
                                 if (response.body().exists()) {
                                     if (jarLoader.load(response.body().getAbsolutePath())) {
                                         callback.success();

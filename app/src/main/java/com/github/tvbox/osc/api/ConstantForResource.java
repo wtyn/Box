@@ -14,12 +14,12 @@ public class ConstantForResource {
      * @return
      */
     public static File getTvLiveFile() {
-        String path1 =rootPath + "/tvlive1.txt";
+        String path1 =rootPath + "/tvlive.txt";
         File file = new File(path1);
         if (file.exists()) {
             return file;
         }
-        return new File(rootPath + "/tvlive.txt");
+        return new File(rootPath + "/default_tvlive.txt");
     }
 
 }
