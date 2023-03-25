@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.res.AssetManager;
 import android.util.Log;
 
+import com.github.tvbox.osc.util.WLogUtil;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -28,7 +30,7 @@ public class AssetsToSdcardAndReplaceUtil {
                 File sdcardFile = new File(pathModel.getAbsolutePath() + File.separator + temp);
                 if (!sdcardFile.exists() || !sdcardFile.isFile()) { //如果不存在的话，进行复制
                     if (sdcardFile.createNewFile()) {
-                        Log.d(TAG, "Create " + temp + " file successfully");
+                        WLogUtil.d(TAG, "Create " + temp + " file successfully");
                     } else {
                         Log.i(TAG, "Creating " + temp + " file failed");
                     }
@@ -72,7 +74,7 @@ public class AssetsToSdcardAndReplaceUtil {
                     }
                     if (!isHave) {
                         boolean res = file.delete();
-                        Log.d("AssetFileUtils", "删除了文件： " + file.getAbsolutePath() + " " + res);
+                        WLogUtil.d("AssetFileUtils", "删除了文件： " + file.getAbsolutePath() + " " + res);
                     }
                 }
             }

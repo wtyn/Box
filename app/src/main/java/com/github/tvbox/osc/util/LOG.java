@@ -15,7 +15,7 @@ public class LOG {
     private static String TAG = "TVBox";
 
     public static void e(Throwable t) {
-        Log.e(TAG, t.getMessage(), t);
+        Log.d(TAG, t.getMessage(), t);
         EventBus.getDefault().post(new LogEvent(String.format("【E/%s】=>>>", TAG) + Log.getStackTraceString(t)));
     }
 

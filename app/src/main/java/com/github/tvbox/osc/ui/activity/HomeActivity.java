@@ -16,6 +16,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.provider.Settings;
+import android.util.Log;
 import android.view.KeyEvent;
 import android.view.View;
 import android.view.ViewGroup;
@@ -57,6 +58,7 @@ import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.FileUtils;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
+import com.github.tvbox.osc.util.WLogUtil;
 import com.github.tvbox.osc.viewmodel.SourceViewModel;
 import com.orhanobut.hawk.Hawk;
 import com.owen.tvrecyclerview.widget.TvRecyclerView;
@@ -134,6 +136,7 @@ public class HomeActivity extends BaseActivity {
         initView();
         initViewModel();
         useCacheConfig = false;
+        WLogUtil.d("xxx", "设置是否使用缓存数据： " + useCacheConfig);
         Intent intent = getIntent();
         if (intent != null && intent.getExtras() != null) {
             Bundle bundle = intent.getExtras();
@@ -326,13 +329,13 @@ public class HomeActivity extends BaseActivity {
         sourceViewModel.sortResult.observe(this, new Observer<AbsSortXml>() {
             @Override
             public void onChanged(AbsSortXml absXml) {
+                WLogUtil.d("xxx", "initViewModel");
                 showSuccess();
                 if (absXml != null && absXml.classes != null && absXml.classes.sortList != null) {
                     sortAdapter.setNewData(DefaultConfig.adjustSort(ApiConfig.get().getHomeSourceBean().getKey(), absXml.classes.sortList, true));
                 } else {
                     sortAdapter.setNewData(DefaultConfig.adjustSort(ApiConfig.get().getHomeSourceBean().getKey(), new ArrayList<>(), true));
                 }
-                //TODO initViewPager
                 initViewPager(absXml);
             }
         });
@@ -379,7 +382,7 @@ public class HomeActivity extends BaseActivity {
         } else {
             tvStyle.setImageResource(R.drawable.hm_left_right);
         }
-
+        WLogUtil.d("xxxx", "这里布局了");
         mGridView.requestFocus();
 
         if (dataInitOk && jarInitOk) {
@@ -404,6 +407,7 @@ public class HomeActivity extends BaseActivity {
                             public void run() {
                                 if (!useCacheConfig)
                                     Toast.makeText(HomeActivity.this, getString(R.string.hm_ok), Toast.LENGTH_SHORT).show();
+                                WLogUtil.d("xxxx", "loadjar -----");
                                 initData();
                             }
                         }, 50);

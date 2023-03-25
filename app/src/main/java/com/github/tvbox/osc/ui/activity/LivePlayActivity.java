@@ -27,6 +27,7 @@ import androidx.recyclerview.widget.RecyclerView;
 import com.chad.library.adapter.base.BaseQuickAdapter;
 import com.github.tvbox.osc.R;
 import com.github.tvbox.osc.api.ApiConfig;
+import com.github.tvbox.osc.api.ConstantForResource;
 import com.github.tvbox.osc.base.App;
 import com.github.tvbox.osc.base.BaseActivity;
 import com.github.tvbox.osc.bean.Epginfo;
@@ -50,6 +51,7 @@ import com.github.tvbox.osc.ui.dialog.LivePasswordDialog;
 import com.github.tvbox.osc.util.EpgUtil;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.WLogUtil;
 import com.github.tvbox.osc.util.live.TxtSubscribe;
 import com.github.tvbox.osc.util.urlhttp.CallBackUtil;
 import com.github.tvbox.osc.util.urlhttp.UrlHttpUtil;
@@ -70,7 +72,6 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -1552,6 +1553,7 @@ public class LivePlayActivity extends BaseActivity {
                         dialog.setAdapter(new ApiHistoryDialogAdapter.SelectDialogInterface() {
                             @Override
                             public void click(String liveURL) {
+                                WLogUtil.d("xxx", "这配置的直播liveRUL: " + liveURL);
                                 Hawk.put(HawkConfig.LIVE_URL, liveURL);
                                 liveChannelGroupList.clear();
                                 try {
@@ -1586,11 +1588,11 @@ public class LivePlayActivity extends BaseActivity {
     }
 
     private void initLiveChannelList() {
+        WLogUtil.d("xxx", "initLiveChannelList");
         //适配安卓4.4，网络请
-        //
         // 求异常。直接读取文件
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.KITKAT_WATCH) {
-            File liveFile = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/tvlive.txt");
+            File liveFile = ConstantForResource.getTvLiveFile();
             if (liveFile.exists()) {
                 String liveTxt = "";
                 try {
@@ -1660,7 +1662,13 @@ public class LivePlayActivity extends BaseActivity {
             return;
         }
         showLoading();
+        WLogUtil.d("xxx", "加载直播列表列表：" + url);
         OkGo.<String>get(url).execute(new AbsCallback<String>() {
+
+            @Override
+            public void onError(Response<String> response) {
+                WLogUtil.d("xxx", "请求直播地址错误：" + response.message());
+            }
 
             @Override
             public String convertResponse(okhttp3.Response response) throws Throwable {

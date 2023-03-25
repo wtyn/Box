@@ -2,6 +2,7 @@ package com.github.tvbox.osc.viewmodel;
 
 import android.text.TextUtils;
 import android.util.Base64;
+import android.util.Log;
 
 import androidx.lifecycle.MutableLiveData;
 import androidx.lifecycle.ViewModel;
@@ -20,6 +21,7 @@ import com.github.tvbox.osc.event.RefreshEvent;
 import com.github.tvbox.osc.util.DefaultConfig;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LOG;
+import com.github.tvbox.osc.util.WLogUtil;
 import com.github.tvbox.osc.util.thunder.Thunder;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -28,6 +30,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
 import com.lzy.okgo.OkGo;
+import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.callback.AbsCallback;
 import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
@@ -73,6 +76,8 @@ public class SourceViewModel extends ViewModel {
 
     public static final ExecutorService spThreadPool = Executors.newSingleThreadExecutor();
 
+    private boolean isCompleteUrl  = false;
+
     // homeContent
     public void getSort(String sourceKey) {
         if (sourceKey == null) {
@@ -81,6 +86,7 @@ public class SourceViewModel extends ViewModel {
         }
         SourceBean sourceBean = ApiConfig.get().getSource(sourceKey);
         int type = sourceBean.getType();
+        WLogUtil.d("xxx", "type: " + type);
         if (type == 3) {
             Runnable waitResponse = new Runnable() {
                 @Override
@@ -89,13 +95,16 @@ public class SourceViewModel extends ViewModel {
                     Future<String> future = executor.submit(new Callable<String>() {
                         @Override
                         public String call() throws Exception {
+                            WLogUtil.d("xxx", "开始了 waitResponse");
                             Spider sp = ApiConfig.get().getCSP(sourceBean);
                             return sp.homeContent(true);
                         }
                     });
                     String sortJson = null;
                     try {
+                        long now2 = System.currentTimeMillis();
                         sortJson = future.get(15, TimeUnit.SECONDS);
+                        WLogUtil.d("xxxx", "耗时22： " + (System.currentTimeMillis() - now2) );
                     } catch (TimeoutException e) {
                         e.printStackTrace();
                         future.cancel(true);
@@ -103,11 +112,14 @@ public class SourceViewModel extends ViewModel {
                         e.printStackTrace();
                     } finally {
                         if (sortJson != null) {
+                            long now = System.currentTimeMillis();
                             AbsSortXml sortXml = sortJson(sortResult, sortJson);
+                            WLogUtil.d("xxxx", "耗时： " + (System.currentTimeMillis() - now) );
                             if (sortXml != null && Hawk.get(HawkConfig.HOME_REC, 0) == 1) {
                                 AbsXml absXml = json(null, sortJson, sourceBean.getKey());
                                 if (absXml != null && absXml.movie != null && absXml.movie.videoList != null && absXml.movie.videoList.size() > 0) {
                                     sortXml.videoList = absXml.movie.videoList;
+                                    WLogUtil.d("xxxx", "发数据了");
                                     sortResult.postValue(sortXml);
                                 } else {
                                     getHomeRecList(sourceBean, null, new HomeRecCallback() {
@@ -119,6 +131,7 @@ public class SourceViewModel extends ViewModel {
                                     });
                                 }
                             } else {
+                                WLogUtil.d("xxxx", "发数据了222");
                                 sortResult.postValue(sortXml);
                             }
                         } else {
@@ -136,6 +149,7 @@ public class SourceViewModel extends ViewModel {
         } else if (type == 0 || type == 1) {
             OkGo.<String>get(sourceBean.getApi())
                     .tag(sourceBean.getKey() + "_sort")
+                    .cacheMode(CacheMode.FIRST_CACHE_THEN_REQUEST)
                     .execute(new AbsCallback<String>() {
                         @Override
                         public String convertResponse(okhttp3.Response response) throws Throwable {
@@ -147,7 +161,39 @@ public class SourceViewModel extends ViewModel {
                         }
 
                         @Override
+                        public void onCacheSuccess(Response<String> response) {
+                            WLogUtil.d("xxx", "使用了cache了2");
+                            AbsSortXml sortXml = null;
+                            if (type == 0) {
+                                String xml = response.body();
+                                sortXml = sortXml(sortResult, xml);
+                            } else if (type == 1) {
+                                String json = response.body();
+                                sortXml = sortJson(sortResult, json);
+                            }
+                            if (sortXml != null && Hawk.get(HawkConfig.HOME_REC, 0) == 1 && sortXml.list != null && sortXml.list.videoList != null && sortXml.list.videoList.size() > 0) {
+                                ArrayList<String> ids = new ArrayList<>();
+                                for (Movie.Video vod : sortXml.list.videoList) {
+                                    ids.add(vod.id);
+                                }
+                                AbsSortXml finalSortXml = sortXml;
+                                getHomeRecList(sourceBean, ids, new HomeRecCallback() {
+                                    @Override
+                                    public void done(List<Movie.Video> videos) {
+                                        finalSortXml.videoList = videos;
+                                        sortResult.postValue(finalSortXml);
+                                    }
+                                });
+                            } else {
+                                sortResult.postValue(sortXml);
+                            }
+                            isCompleteUrl = true;
+                        }
+
+                        @Override
                         public void onSuccess(Response<String> response) {
+                            WLogUtil.d("xxx", "开始网络请求2");
+                            if (isCompleteUrl) return;
                             AbsSortXml sortXml = null;
                             if (type == 0) {
                                 String xml = response.body();
@@ -338,6 +384,7 @@ public class SourceViewModel extends ViewModel {
     //    homeVideoContent
     void getHomeRecList(SourceBean sourceBean, ArrayList<String> ids, HomeRecCallback callback) {
         int type = sourceBean.getType();
+        WLogUtil.d("xxx", "homeList: " + type);
         if (type == 3) {
             Runnable waitResponse = new Runnable() {
                 @Override

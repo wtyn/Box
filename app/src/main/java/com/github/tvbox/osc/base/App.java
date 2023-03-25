@@ -15,9 +15,11 @@ import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.LocaleHelper;
 import com.github.tvbox.osc.util.OkGoHelper;
 import com.github.tvbox.osc.util.PlayerHelper;
+import com.github.tvbox.osc.util.WLogUtil;
 import com.github.tvbox.osc.util.assetscopy.AssetsToSdcardAndReplaceUtil;
 import com.github.tvbox.osc.util.js.JSEngine;
 import com.kingja.loadsir.core.LoadSir;
+import com.lzy.okgo.OkGo;
 import com.orhanobut.hawk.Hawk;
 
 import java.io.File;
@@ -38,6 +40,8 @@ public class App extends MultiDexApplication {
     public void onCreate() {
         super.onCreate();
         instance = this;
+
+        WLogUtil.getInstance().init(this);
 
         //复制jar文件
         AssetsFilePathModel pathModel = new AssetsFilePathModel("csp_jar", "");
@@ -75,6 +79,8 @@ public class App extends MultiDexApplication {
 
         // Add JS support
         JSEngine.getInstance().create();
+
+        OkGo.getInstance().init(this);
     }
 
     @Override

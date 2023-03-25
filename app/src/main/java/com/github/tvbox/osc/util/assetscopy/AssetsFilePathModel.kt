@@ -1,8 +1,7 @@
 package tn.uu.baselibrary.utils
 
-import android.os.Environment
 import android.util.Log
-import com.github.tvbox.osc.base.App
+import com.github.tvbox.osc.api.ConstantForResource
 import java.io.File
 
 /**
@@ -13,7 +12,7 @@ import java.io.File
 class AssetsFilePathModel(val assetsDir: String, private val sdcardDir: String) {
 
     val absolutePath: String by lazy {
-        val path = App.getInstance().filesDir.absolutePath + File.separator + sdcardDir
+        val path = ConstantForResource.rootPath + File.separator + sdcardDir
         createDir(path)
         path
     }

@@ -24,14 +24,17 @@ import com.github.tvbox.osc.ui.activity.HomeActivity;
 import com.github.tvbox.osc.util.AES;
 import com.github.tvbox.osc.util.AdBlocker;
 import com.github.tvbox.osc.util.DefaultConfig;
+import com.github.tvbox.osc.util.GlobalThreadPools;
 import com.github.tvbox.osc.util.HawkConfig;
 import com.github.tvbox.osc.util.MD5;
 import com.github.tvbox.osc.util.VideoParseRuler;
+import com.github.tvbox.osc.util.WLogUtil;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.lzy.okgo.OkGo;
+import com.lzy.okgo.cache.CacheMode;
 import com.lzy.okgo.callback.AbsCallback;
 import com.lzy.okgo.model.Response;
 import com.orhanobut.hawk.Hawk;
@@ -159,6 +162,8 @@ public class ApiConfig {
 
     }
 
+    private boolean isCompleteApiUrl = false;
+
     /**
      * 开始加载网络数据
      *
@@ -167,8 +172,10 @@ public class ApiConfig {
      * @param callback
      */
     public void loadWithApiUrl(String apiUrl, boolean useCache, @Nullable LoadConfigCallback callback) {
+        //从缓存加载数据
         File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/" + MD5.encode(apiUrl));
         if (useCache && cache.exists()) {
+            WLogUtil.d("xxxx", "11直接使用缓存");
             try {
                 parseJson(apiUrl, cache);
                 if (callback != null) {
@@ -179,6 +186,7 @@ public class ApiConfig {
                 th.printStackTrace();
             }
         }
+
         String TempKey = null, configUrl = "", pk = ";pk;";
         if (apiUrl.contains(pk)) {
             String[] a = apiUrl.split(pk);
@@ -197,30 +205,21 @@ public class ApiConfig {
         } else {
             configUrl = apiUrl;
         }
-        Log.e("xxxx", "API URL :" + configUrl);
+        WLogUtil.d("xxxx", "API URL");
         String configKey = TempKey;
         OkGo.<String>get(configUrl)
                 .headers("User-Agent", userAgent)
                 .headers("Accept", requestAccept)
+                .cacheMode(CacheMode.FIRST_CACHE_THEN_REQUEST)
                 .execute(new AbsCallback<String>() {
                     @Override
-                    public void onSuccess(Response<String> response) {
+                    public void onCacheSuccess(Response<String> response) {
+                        super.onCacheSuccess(response);
+                        isCompleteApiUrl = true;
+                        WLogUtil.d("xxxxx", "使用缓存了, 网络请求是为了保存更新的数据");
                         try {
                             String json = response.body();
                             parseJson(apiUrl, json);
-                            try {
-                                File cacheDir = cache.getParentFile();
-                                if (!cacheDir.exists())
-                                    cacheDir.mkdirs();
-                                if (cache.exists())
-                                    cache.delete();
-                                FileOutputStream fos = new FileOutputStream(cache);
-                                fos.write(json.getBytes("UTF-8"));
-                                fos.flush();
-                                fos.close();
-                            } catch (Throwable th) {
-                                th.printStackTrace();
-                            }
                             if (callback != null) {
                                 callback.success();
                             }
@@ -230,6 +229,43 @@ public class ApiConfig {
                                 callback.error("解析配置失败");
                             }
                         }
+                    }
+
+                    @Override
+                    public void onSuccess(Response<String> response) {
+                        GlobalThreadPools.getInstance().execute(new Runnable() {
+                            @Override
+                            public void run() {
+                                WLogUtil.d("xxxx", "网络请求数据1");
+                                try {
+                                    String json = response.body();
+                                    try {
+                                        File cacheDir = cache.getParentFile();
+                                        if (!cacheDir.exists())
+                                            cacheDir.mkdirs();
+                                        if (cache.exists())
+                                            cache.delete();
+                                        FileOutputStream fos = new FileOutputStream(cache);
+                                        fos.write(json.getBytes("UTF-8"));
+                                        fos.flush();
+                                        fos.close();
+                                    } catch (Throwable th) {
+                                        th.printStackTrace();
+                                    }
+                                    //不需要在此解析了
+                                    if (isCompleteApiUrl) return;
+                                    parseJson(apiUrl, json);
+                                    if (callback != null) {
+                                        callback.success();
+                                    }
+                                } catch (Throwable th) {
+                                    th.printStackTrace();
+                                    if (callback != null) {
+                                        callback.error("解析配置失败");
+                                    }
+                                }
+                            }
+                        });
                     }
 
                     @Override
@@ -269,14 +305,15 @@ public class ApiConfig {
     }
 
     public void loadJar(boolean useCache, String spider, LoadConfigCallback callback) {
-        Log.e("xxx", "spider: " + spider);
+        WLogUtil.d("xxx", "spider: " + spider);
         new Thread(new Runnable() {
             @Override
             public void run() {
                 // 判断是否正常, 如果不是jar的url
                 //直接加载默认的jar
                 if (!spider.contains(";md5;") || !spider.contains(".jar") || Build.VERSION.SDK_INT <= Build.VERSION_CODES.KITKAT) {
-                    File cache = new File(App.getInstance().getFilesDir().getAbsolutePath() + "/defaultCsp.jar");
+                    WLogUtil.d("xxx", "加载默认的csp.jar");
+                    File cache = new File(ConstantForResource.rootPath + "/defaultCsp.jar");
                     if (cache.exists()) {
                         if (jarLoader.load(cache.getAbsolutePath())) {
                             callback.success();
@@ -305,10 +342,11 @@ public class ApiConfig {
                 boolean isJarInImg = jarUrl.startsWith("img+");
                 jarUrl = jarUrl.replace("img+", "");
                 //打印url，防止url错误导致无法正常解析
-                Log.e("xxx", "jarUrl: " + jarUrl);
+                WLogUtil.d("xxx", "jarUrl: " + jarUrl);
                 OkGo.<File>get(jarUrl)
                         .headers("User-Agent", userAgent)
                         .headers("Accept", requestAccept)
+                        .cacheMode(CacheMode.FIRST_CACHE_THEN_REQUEST)
                         .execute(new AbsCallback<File>() {
 
                             @Override
@@ -333,6 +371,7 @@ public class ApiConfig {
 
                             @Override
                             public void onSuccess(Response<File> response) {
+                                WLogUtil.d("xxx", "111111111: " + 2222);
                                 if (response.body().exists()) {
                                     if (jarLoader.load(response.body().getAbsolutePath())) {
                                         callback.success();
@@ -356,7 +395,7 @@ public class ApiConfig {
     }
 
     private void parseJson(String apiUrl, File f) throws Throwable {
-        System.out.println("从本地缓存加载" + f.getAbsolutePath());
+        WLogUtil.d("xxxx", "从本地缓存加载" + f.getAbsolutePath());
         BufferedReader bReader = new BufferedReader(new InputStreamReader(new FileInputStream(f), "UTF-8"));
         StringBuilder sb = new StringBuilder();
         String s = "";
@@ -378,6 +417,7 @@ public class ApiConfig {
         JsonObject infoJson = new Gson().fromJson(jsonStr, JsonObject.class);
         // spider
         spider = DefaultConfig.safeJsonString(infoJson, "spider", "");
+        WLogUtil.d("xxx", "spider: " + spider);
         // wallpaper
         wallpaper = DefaultConfig.safeJsonString(infoJson, "wallpaper", "");
         // 远端站点源
@@ -474,7 +514,7 @@ public class ApiConfig {
                     }
 
                     // takagen99: Capture Live URL into Config
-                    Log.e("xxxx", "Live URL :" + extUrlFix);
+                    WLogUtil.d("xxxx", "Live URL :" + extUrlFix);
                     putLiveHistory(extUrlFix);
                     // Overwrite with Live URL from Settings
                     if (StringUtils.isBlank(liveURL)) {
@@ -494,7 +534,7 @@ public class ApiConfig {
                 // takagen99 : Getting EPG URL from File Config & put into Settings
                 if (livesOBJ.has("epg")) {
                     String epg = livesOBJ.get("epg").getAsString();
-                    Log.e("xxx", "EPG URL :" + epg);
+                    WLogUtil.d("xxx", "EPG URL :" + epg);
                     putEPGHistory(epg);
                     // Overwrite with EPG URL from Settings
                     if (StringUtils.isBlank(epgURL)) {
@@ -523,7 +563,7 @@ public class ApiConfig {
                         // takagen99 : Getting EPG URL from File Config & put into Settings
                         if (fengMiLives.has("epg")) {
                             String epg = fengMiLives.get("epg").getAsString();
-                            Log.e("xxx", "EPG URL :" + epg);
+                            WLogUtil.d("xxx", "EPG URL :" + epg);
                             putEPGHistory(epg);
                             // Overwrite with EPG URL from Settings
                             if (StringUtils.isBlank(epgURL)) {
@@ -535,7 +575,7 @@ public class ApiConfig {
 
                         if (url.startsWith("http")) {
                             // takagen99: Capture Live URL into Settings
-                            Log.e("xxx", "Live URL :" + url);
+                            WLogUtil.d("xxx", "Live URL :" + url);
                             putLiveHistory(url);
                             // Overwrite with Live URL from Settings
                             if (StringUtils.isBlank(liveURL)) {
@@ -561,6 +601,7 @@ public class ApiConfig {
             liveURL_final = "http://127.0.0.1:9978/proxy?do=live&type=txt&ext=" + liveURL_final;
             LiveChannelGroup liveChannelGroup = new LiveChannelGroup();
             liveChannelGroup.setGroupName(liveURL_final);
+            WLogUtil.d("xxx", "liveChannelGroupList: " + liveURL_final);
             liveChannelGroupList.add(liveChannelGroup);
 
         } catch (Throwable th) {
@@ -798,8 +839,9 @@ public class ApiConfig {
     public List<LiveChannelGroup> getChannelGroupList() {
         //用来配置EPG资源，如果直播没有内容，修改默认
         if (liveChannelGroupList.size() == 0) {
+            WLogUtil.d("xxx", "加载默认的epg资源");
             //防止为空，防止http无法解析
-            String url = "https://ghproxy.com/https://raw.githubusercontent.com/dxawi/1/main/tvlive.txt";
+            String url = "https://ghproxy.com/https://raw.githubusercontent.com/dxawi/0/main/tvlive.txt";
             String liveURL_final = null;
             try {
                 liveURL_final = Base64.encodeToString(url.getBytes("UTF-8"), Base64.DEFAULT | Base64.URL_SAFE | Base64.NO_WRAP);

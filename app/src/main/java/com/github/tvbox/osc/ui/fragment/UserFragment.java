@@ -27,6 +27,7 @@ import com.github.tvbox.osc.ui.activity.SettingActivity;
 import com.github.tvbox.osc.ui.adapter.HomeHotVodAdapter;
 import com.github.tvbox.osc.util.FastClickCheckUtil;
 import com.github.tvbox.osc.util.HawkConfig;
+import com.github.tvbox.osc.util.WLogUtil;
 import com.google.android.exoplayer2.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.JsonArray;
@@ -271,7 +272,7 @@ public class UserFragment extends BaseLazyFragment implements View.OnClickListen
             OkGo.<String>get("https://movie.douban.com/j/new_search_subjects?sort=U&range=0,10&tags=&playable=1&start=0&year_range=" + year + "," + year).execute(new AbsCallback<String>() {
                 @Override
                 public void onSuccess(Response<String> response) {
-                    Log.e("xxx", "下载了啊");
+                    WLogUtil.d("xxx", "下载了啊");
                     String netJson = response.body();
                     Hawk.put("home_hot_day", today);
                     Hawk.put("home_hot", netJson);
