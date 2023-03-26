@@ -42,9 +42,9 @@ public class GlobalThreadPools {
             @Override
             public void execute(Runnable command) {
                 super.execute(command);
-                WLogUtil.e(TAG,"ActiveCount="+getActiveCount());
-                WLogUtil.e(TAG,"PoolSize="+getPoolSize());
-                WLogUtil.e(TAG,"Queue="+getQueue().size());
+                WLogUtil.d(TAG,"ActiveCount="+getActiveCount());
+                WLogUtil.d(TAG,"PoolSize="+getPoolSize());
+                WLogUtil.d(TAG,"Queue="+getQueue().size());
             }
         };
     }

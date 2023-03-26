@@ -42,7 +42,7 @@
 -keep public class * extends android.app.backup.BackupAgentHelper
 -keep public class * extends android.preference.Preference
 -keep public class * extends android.view.View
--keep public class com.android.vending.licensing.ILicensingService
+
 
 # 保留support下的所有类及其内部类
 -keep class android.support.** {*;}
@@ -172,6 +172,7 @@
 -keepclassmembers class * extends org.greenrobot.eventbus.util.ThrowableFailureEvent {
     <init>(java.lang.Throwable);
 }
+-keep class org.greenrobot.eventbus.** { *; }
 #bugly
 -dontwarn com.tencent.bugly.**
 -keep public class com.tencent.bugly.**{*;}

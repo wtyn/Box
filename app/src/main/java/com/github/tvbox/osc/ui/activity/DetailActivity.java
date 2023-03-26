@@ -834,6 +834,7 @@ public class DetailActivity extends BaseActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        EventBus.getDefault().unregister(this);
         try {
             if (searchExecutorService != null) {
                 searchExecutorService.shutdownNow();
@@ -846,7 +847,6 @@ public class DetailActivity extends BaseActivity {
         OkGo.getInstance().cancelTag("detail");
         OkGo.getInstance().cancelTag("quick_search");
         OkGo.getInstance().cancelTag("pushVod");
-        EventBus.getDefault().unregister(this);
     }
 
     boolean PiPON = Hawk.get(HawkConfig.PIC_IN_PIC, false);
@@ -868,9 +868,11 @@ public class DetailActivity extends BaseActivity {
                 ratio = new Rational(16, 9);
             }
             List<RemoteAction> actions = new ArrayList<>();
-            actions.add(generateRemoteAction(android.R.drawable.ic_media_previous, PIP_BOARDCAST_ACTION_PREV, "Prev", "Play Previous"));
-            actions.add(generateRemoteAction(android.R.drawable.ic_media_play, PIP_BOARDCAST_ACTION_PLAYPAUSE, "Play", "Play/Pause"));
-            actions.add(generateRemoteAction(android.R.drawable.ic_media_next, PIP_BOARDCAST_ACTION_NEXT, "Next", "Play Next"));
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                actions.add(TempForEventBus.generateRemoteAction(this, android.R.drawable.ic_media_previous, PIP_BOARDCAST_ACTION_PREV, "Prev", "Play Previous"));
+                actions.add(TempForEventBus.generateRemoteAction(this, android.R.drawable.ic_media_play, PIP_BOARDCAST_ACTION_PLAYPAUSE, "Play", "Play/Pause"));
+                actions.add(TempForEventBus.generateRemoteAction(this, android.R.drawable.ic_media_next, PIP_BOARDCAST_ACTION_NEXT, "Next", "Play Next"));
+            }
             PictureInPictureParams params = new PictureInPictureParams.Builder()
                     .setAspectRatio(ratio)
                     .setActions(actions).build();
@@ -883,17 +885,24 @@ public class DetailActivity extends BaseActivity {
         super.onUserLeaveHint();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.O)
-    private RemoteAction generateRemoteAction(int iconResId, int actionCode, String title, String desc) {
-        final PendingIntent intent =
-                PendingIntent.getBroadcast(
-                        DetailActivity.this,
-                        actionCode,
-                        new Intent("PIP_VOD_CONTROL").putExtra("action", actionCode),
-                        0);
-        final Icon icon = Icon.createWithResource(DetailActivity.this, iconResId);
-        return (new RemoteAction(icon, title, desc, intent));
+    /**
+     * 在安卓低于26版本时候，
+     * 在EventBus注册过程中，找不到RemoteAction这个类的问题
+     */
+    private static class TempForEventBus {
+        @RequiresApi(api = Build.VERSION_CODES.O)
+        public static RemoteAction generateRemoteAction(Context context, int iconResId, int actionCode, String title, String desc) {
+            final PendingIntent intent =
+                    PendingIntent.getBroadcast(
+                            context,
+                            actionCode,
+                            new Intent("PIP_VOD_CONTROL").putExtra("action", actionCode),
+                            0);
+            final Icon icon = Icon.createWithResource(context, iconResId);
+            return (new RemoteAction(icon, title, desc, intent));
+        }
     }
+
 
     @Override
     public void onPictureInPictureModeChanged(boolean isInPictureInPictureMode) {

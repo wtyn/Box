@@ -1,6 +1,8 @@
 package com.github.tvbox.osc.base;
 
+import android.app.Activity;
 import android.content.Context;
+import android.os.Bundle;
 
 import androidx.multidex.MultiDex;
 import androidx.multidex.MultiDexApplication;
@@ -42,6 +44,8 @@ public class App extends MultiDexApplication {
         instance = this;
 
         WLogUtil.getInstance().init(this);
+
+        registerActivityLifecycleCallbacks();
 
         //复制jar文件
         AssetsFilePathModel pathModel = new AssetsFilePathModel("csp_jar", "");
@@ -103,6 +107,47 @@ public class App extends MultiDexApplication {
 //        putDefault(HawkConfig.SEARCH_VIEW, 1);    // Text or Picture
 
     }
+
+
+    public void registerActivityLifecycleCallbacks() {
+        registerActivityLifecycleCallbacks(new ActivityLifecycleCallbacks() {
+            @Override
+            public void onActivityCreated(Activity activity, Bundle savedInstanceState) {
+                WLogUtil.d("xxx",activity + " onActivityCreated");
+            }
+
+            @Override
+            public void onActivityStarted(Activity activity) {
+                WLogUtil.d("xxx",activity + " onActivityStarted");
+            }
+
+            @Override
+            public void onActivityResumed(Activity activity) {
+                WLogUtil.d("xxx",activity + " onActivityResumed");
+            }
+
+            @Override
+            public void onActivityPaused(Activity activity) {
+                WLogUtil.d("xxx",activity + " onActivityPaused");
+            }
+
+            @Override
+            public void onActivityStopped(Activity activity) {
+                WLogUtil.d("xxx",activity + " onActivityStopped");
+            }
+
+            @Override
+            public void onActivitySaveInstanceState(Activity activity, Bundle outState) {
+                WLogUtil.d("xxx",activity + " onActivitySaveInstanceState");
+            }
+
+            @Override
+            public void onActivityDestroyed(Activity activity) {
+                WLogUtil.d("xxx",activity + " onActivityDestroyed");
+            }
+        });
+    }
+
 
     private void initLocale() {
         if (Hawk.get(HawkConfig.HOME_LOCALE, 0) == 0) {

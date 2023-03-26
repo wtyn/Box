@@ -16,6 +16,7 @@ import androidx.annotation.CallSuper;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 
+import java.lang.ref.WeakReference;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -104,7 +105,9 @@ public abstract class BaseVideoController extends FrameLayout
         mHideAnim = new AlphaAnimation(1f, 0f);
         mHideAnim.setDuration(300);
 
-        mActivity = PlayerUtils.scanForActivity(getContext());
+        Activity activity = PlayerUtils.scanForActivity(getContext());
+        WeakReference<Activity> reference = new WeakReference<>(activity);
+        mActivity = reference.get();
     }
 
     /**

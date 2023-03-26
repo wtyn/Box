@@ -68,6 +68,7 @@ import xyz.doikki.videoplayer.util.PlayerUtils;
 public class VodController extends BaseController {
     public VodController(@NonNull @NotNull Context context) {
         super(context);
+
         mHandlerCallback = new HandlerCallback() {
             @Override
             public void callback(Message msg) {
